@@ -46,9 +46,10 @@ def index():
 
 def mainPro7():
     addDir("Neue Folgen", baseUrlPro7+"/video", "listVideosPro7", iconPro7)
+    addDir("Schulz in the Box", baseUrlPro7+"/tv/schulz-in-the-box/playlists/ganze-folge", "listVideosPro7", iconPro7)
     addDir("Circus Halligalli", baseUrlPro7+"/tv/circus-halligalli/videos/playlist-alle-ganzen-folgen", "listVideosPro7", iconPro7)
-    addDir("Galileo", baseUrlPro7+"/tv/galileo/videos/playlists/ganze-folgen", "listVideosPro7", iconPro7)
     addDir("Joko gegen Klaas", baseUrlPro7+"/tv/joko-gegen-klaas/video/playlists/ganze-folgen", "listVideosPro7", iconPro7)
+    addDir("Galileo", baseUrlPro7+"/tv/galileo/videos/playlists/ganze-folgen", "listVideosPro7", iconPro7)
     addDir("taff", baseUrlPro7+"/tv/taff/playlists/playlist-ganze-folgen-taff", "listVideosPro7", iconPro7)
     xbmcplugin.endOfDirectory(pluginhandle)
 
@@ -56,11 +57,7 @@ def mainPro7():
 def mainSat1():
     addDir("Neue Folgen", baseUrlSat1+"/video", "listVideosSat1", iconSat1)
     #addDir("Alle Sendungen", "", "listShows", icon)
-    content = opener.open(baseUrlSat1+"/film/der-sat-1-filmfilm/video").read()
-    match = re.compile('<div class="cycle">.+?href="(.+?)".+?src="(.+?)".+?<h2><strong class="teaser-headline">(.+?)</strong>', re.DOTALL).findall(content)
-    if match:
-        addLink(match[0][2], baseUrlSat1+match[0][0], "playVideoMobile", baseUrlSat1+match[0][1])
-    xbmcplugin.endOfDirectory(pluginhandle)
+    listVideosSat1(baseUrlSat1+"/film/der-sat-1-filmfilm/video")
 
 
 def mainKabel1():
@@ -117,21 +114,18 @@ def listVideosSat1(urlMain):
         spl = content.split('<article class="teaser')
     elif '<div class="video_teaser' in content:
         spl = content.split('<div class="video_teaser')
+    elif 'class="teaser-image"' in content:
+        spl = content.split('class="teaser-image"')
     for i in range(1, len(spl), 1):
         entry = spl[i]
-        match = re.compile('<span class="length full_length">Ganze Folge<', re.DOTALL).findall(entry)
-        if match:
-            duration = match[0]
+        if "Ganze Folge - " in entry:
             match = re.compile('href="(.+?)"', re.DOTALL).findall(entry)
             url = baseUrlSat1+match[0]
-            match = re.compile('class="teaser-headline">(.+?)<', re.DOTALL).findall(entry)
+            match = re.compile('title="(.+?)"', re.DOTALL).findall(entry)
             if match:
-                title = match[0]
-                match = re.compile('class="teaser-format-name">(.+?)<', re.DOTALL).findall(entry)
-                if match:
-                    title = match[0]+" - "+title
+                title = match[0].replace("Ganze Folge - ","")
                 title = cleanTitle(title)
-                match = re.compile('src="(.+?)"', re.DOTALL).findall(entry)
+                match = re.compile("background-image:url\\('(.+?)'\\)", re.DOTALL).findall(entry)
                 thumb = match[0]
                 if "/full/" in thumb:
                     thumb = thumb[thumb.find("/full/"):]
@@ -139,7 +133,7 @@ def listVideosSat1(urlMain):
                     thumb = "http://thumbnails.sevenoneintermedia.de"+thumb+".jpg"
                 if not thumb.startswith("http"):
                     thumb = baseUrlSat1+thumb
-                addLink(title, url, 'playVideoMobile', thumb, "", duration)
+                addLink(title, url, 'playVideoMobile', thumb, "", "")
     xbmcplugin.endOfDirectory(pluginhandle)
     if forceViewMode:
         xbmc.executebuiltin('Container.SetViewMode('+viewID+')')
@@ -293,7 +287,7 @@ def listShow(url):
 
 def playVideoMobile(url):
     content = opener.open(url).read()
-    matchID = re.compile('"clip_id" : "(.+?)"', re.DOTALL).findall(content)
+    matchID = re.compile('"clip_id".*?:.*?"(.+?)"', re.DOTALL).findall(content)
     #content = opener.open("http://ws.vtc.sim-technik.de/video/video.jsonp?clipid="+matchID[0]+"&method=4").read()
     #match = re.compile('"VideoURL":"(.+?)"', re.DOTALL).findall(content)
     #streamURL = match[0].replace("\\","")
